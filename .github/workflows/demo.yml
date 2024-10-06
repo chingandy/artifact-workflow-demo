@@ -20,6 +20,10 @@ jobs:
         run: npm run lint
       - name: Test code
         run: npm run test
+      - name: print default envs
+        run: |
+          echo "GITHUB_ENV: $GITHUB_ENV"
+          echo "GITHUB_ACTION: $GITHUB_ACTION"
   build:
     needs: test
     runs-on: ubuntu-latest
