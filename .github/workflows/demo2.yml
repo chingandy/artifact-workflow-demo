@@ -1,0 +1,80 @@
+---
+name: test if condition
+
+permissions:
+  id-token: write
+  contents: write
+  pull-requests: write
+  issues: write
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_env:
+        description: Source
+        required: true
+        type: choice
+        options:
+          - test
+          - dev
+      target_env:
+        description: Target
+        required: true
+        type: choice
+        options:
+          - dev
+          - int
+          - prod
+
+jobs:
+  ManualApproval:
+    if: inputs.target_env == 'prod'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check manual approval
+        uses: trstringer/manual-approval@v1
+        with:
+          secret: ${{ secrets.GITHUB_TOKEN }}
+          approvers: chingandy
+          minimum-approvals: 1
+          issue-title: test if condition for PROD
+          issue-body: Please review this deployment workflow run!
+          exclude-workflow-initiator-as-approver: false
+
+  fetch-src-token:
+    needs: ManualApproval
+    if: |
+      always() && 
+      (inputs.target_env != 'prod' || needs.ManualApproval.result == 'success') && 
+      !failure() && 
+      !cancelled()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get Grafana Bearer token
+        id: set-src-token
+        run: |
+          echo "fetch src token"
+  fetch-dest-token:
+    needs: fetch-src-token
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get Grafana Bearer token
+        id: set-dest-token
+        run: |
+          echo "fetch dest token"
+
+  transfer:
+    needs:
+      - fetch-src-token
+      - fetch-dest-token
+    if: |
+      always() &&
+      needs.fetch-src-token.result == 'success' &&
+      needs.fetch-dest-token.result == 'success' &&
+      !failure() &&
+      !cancelled()
+    runs-on: ubuntu-latest
+    steps:
+      - name: transfer
+        run: |-
+          echo "transfer the dashboard..."
