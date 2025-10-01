@@ -56,6 +56,11 @@ jobs:
           echo "fetch src token"
   fetch-dest-token:
     needs: fetch-src-token
+    if: |
+      always() && 
+      needs.fetch-src-token.result == 'success' && 
+      !failure() && 
+      !cancelled()
     runs-on: ubuntu-latest
     steps:
       - name: Get Grafana Bearer token
